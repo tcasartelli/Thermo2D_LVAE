@@ -1,0 +1,45 @@
+# WandB Sweep: Weight-range study on thermoelastic2d
+# Trains on slices of the weight range to see how dimensionality scales with range breadth.
+# NOTE: WandB sweeps don't natively support tuple parameters, so this sweep
+# uses individual runs launched manually or via a wrapper script:
+#
+#   python engiopt/vanilla_lvae/constrained_vanilla_plvae_2d.py \
+#     --problem-id thermoelastic2d --save-model \
+#     --condition-filter-key weight \
+#     --condition-filter-range 0.0 0.2 \
+#     --seed 1
+#
+# Weight ranges to sweep:
+#   [0.0, 0.2], [0.2, 0.4], [0.4, 0.6], [0.6, 0.8], [0.8, 1.0]  (narrow)
+#   [0.0, 0.5], [0.5, 1.0]                                        (half)
+#   [0.0, 1.0]                                                     (full, no filter)
+#
+# Seeds: 1, 2, 3
+# Total: (5 narrow + 2 half + 1 full) × 3 seeds = 24 runs
+method: grid
+command:
+  - "python"
+  - "engiopt/vanilla_lvae/constrained_vanilla_plvae_2d.py"
+  - "--save_model"
+  - "${args}"
+
+metric:
+  name: val_rec
+  goal: minimize
+
+parameters:
+  problem_id:
+    value: "thermoelastic2d"
+
+  seed:
+    values: [1, 2, 3]
+
+  nmse_threshold_rec:
+    value: 0.05
+  nmse_threshold_perf:
+    value: 0.05
+
+  # NOTE: condition_filter_range is a tuple and cannot be swept directly.
+  # Use the manual commands above or a launcher script.
+  condition_filter_key:
+    value: "weight"

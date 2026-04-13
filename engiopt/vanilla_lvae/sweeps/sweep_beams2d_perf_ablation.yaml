@@ -1,0 +1,27 @@
+# WandB Sweep: Performance ablation P-LVAE on beams2d
+# Grid: 3 rec × 2 perf = 6 runs
+# Performance ON = 0.001, Performance OFF = 1.0
+method: grid
+command:
+  - "python"
+  - "engiopt/vanilla_lvae/constrained_vanilla_plvae_2d.py"
+  - "--save_model"
+  - "${args}"
+
+metric:
+  name: val_rec
+  goal: minimize
+
+parameters:
+  problem_id:
+    value: "beams2d"
+
+  # Reconstruction thresholds
+  # barely_achievable=0.001, medium_hard=0.005, easy=0.010
+  nmse_threshold_rec:
+    values: [0.001, 0.005, 0.010]
+
+  # Performance thresholds
+  # on=0.001 (reasonably achievable), off=1.0
+  nmse_threshold_perf:
+    values: [0.001, 1.0]

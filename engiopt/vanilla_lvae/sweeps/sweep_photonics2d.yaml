@@ -1,0 +1,39 @@
+# WandB Sweep: Constrained P-LVAE on photonics2d
+# Best achievable: rec_NMSE=0.03, perf_NMSE=0.0003
+# Grid: 4 rec × 4 perf × 3 lip_pred × 3 lip_dec = 144 runs
+method: grid
+command:
+  - "python"
+  - "engiopt/vanilla_lvae/vanilla_plvae_2d.py"
+  - "${args}"
+
+metric:
+  name: val_rec
+  goal: minimize
+
+parameters:
+  problem_id:
+    value: "photonics2d"
+  track:
+    value: true
+  save_model:
+    value: true
+
+
+  # Reconstruction thresholds (best=0.03)
+  # great=0.05, good=0.1, ok=0.2, bad=0.4
+  nmse_threshold_rec:
+    values: [0.05, 0.1, 0.2, 0.4]
+
+  # Performance thresholds (best=0.0003)
+  # great=0.001, good=0.005, ok=0.02, bad=0.1
+  nmse_threshold_perf:
+    values: [0.001, 0.005, 0.02, 0.1]
+
+  # Predictor lipschitz variation
+  predictor_lipschitz_scale:
+    values: [0.5, 1.0, 2.0]
+
+  # Decoder lipschitz variation
+  decoder_lipschitz_scale:
+    values: [0.5, 1.0, 2.0]

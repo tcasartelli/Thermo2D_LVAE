@@ -1,0 +1,33 @@
+# WandB Sweep: Constrained P-LVAE on thermoelastic2d — single-weight study
+# Trains separate models for each weight value + one all-weights model.
+# Grid: 6 weight configs × 3 seeds = 18 runs
+method: grid
+command:
+  - "python"
+  - "engiopt/vanilla_lvae/constrained_vanilla_plvae_2d.py"
+  - "--save_model"
+  - "${args}"
+
+metric:
+  name: val_rec
+  goal: minimize
+
+parameters:
+  problem_id:
+    value: "thermoelastic2d"
+
+  seed:
+    value: 1
+
+  # NMSE thresholds (start generous, tighten after initial results)
+  nmse_threshold_rec:
+    values: [0.001, 0.005, 0.01]
+  nmse_threshold_perf:
+    values: [0.001, 1000.0]
+
+  # Weight filter: each value trains on designs at that weight only.
+  # "none" entry omitted — run a separate no-filter sweep or manual run for all-weights.
+  condition_filter_key:
+    value: "weight"
+  condition_filter_value:
+    values: [0.0, 0.3, 0.5, 0.7, 1.0]

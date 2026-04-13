@@ -1,0 +1,34 @@
+# WandB Sweep: Evaluate multiple generator types + seeds on beams2d
+# Purpose: Build a diverse evaluation corpus beyond cgan_cnn_2d seed 42
+# Each combination trains a fresh generator and evaluates with LV-MMD
+method: grid
+
+command:
+  - "python"
+  - "engiopt/cgan_cnn_2d/cgan_cnn_2d.py"
+  - "${args}"
+
+metric:
+  name: val_gen_loss
+  goal: minimize
+
+parameters:
+  problem_id:
+    value: "beams2d"
+  track:
+    value: true
+  save_model:
+    value: true
+  n_epochs:
+    value: 200
+
+  # Multiple seeds for statistical power
+  seed:
+    values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+  # Vary key hyperparameters to get quality spread
+  latent_dim:
+    values: [32, 64, 128]
+
+  batch_size:
+    values: [32, 64]

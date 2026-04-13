@@ -1,0 +1,27 @@
+# WandB Sweep: Performance ablation P-LVAE on heatconduction2d
+# Grid: 3 rec × 2 perf = 6 runs
+# Performance ON = 0.005, Performance OFF = 1.0
+method: grid
+command:
+  - "python"
+  - "engiopt/vanilla_lvae/constrained_vanilla_plvae_2d.py"
+  - "--save_model"
+  - "${args}"
+
+metric:
+  name: val_rec
+  goal: minimize
+
+parameters:
+  problem_id:
+    value: "heatconduction2d"
+
+  # Reconstruction thresholds
+  # barely_achievable=0.025, medium_hard=0.05, easy=0.10
+  nmse_threshold_rec:
+    values: [0.025, 0.05, 0.10]
+
+  # Performance thresholds
+  # on=0.005 (reasonably achievable), off=1.0
+  nmse_threshold_perf:
+    values: [0.005, 1.0]

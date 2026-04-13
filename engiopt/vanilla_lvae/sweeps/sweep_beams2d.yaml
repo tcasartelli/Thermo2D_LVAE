@@ -1,0 +1,31 @@
+# WandB Sweep: Constrained P-LVAE on beams2d
+# Best achievable: rec_NMSE=0.0002, perf_NMSE=0.0002
+# Grid: 4 rec × 4 perf × 3 lip_pred × 3 lip_dec = 144 runs
+method: grid
+command:
+  - "python"
+  - "engiopt/vanilla_lvae/vanilla_plvae_2d.py"
+  - "${args}"
+
+metric:
+  name: val_rec
+  goal: minimize
+
+parameters:
+  problem_id:
+    value: "beams2d"
+  track:
+    value: true
+  save_model:
+    value: true
+
+
+  # Reconstruction thresholds (best=0.0002)
+  # great=0.001, good=0.005, ok=0.02, bad=0.1
+  nmse_threshold_rec:
+    values: [0.001, 0.005, 0.02, 0.1]
+
+  # Performance thresholds (best=0.0002)
+  # great=0.001, good=0.005, ok=0.02, bad=0.1
+  nmse_threshold_perf:
+    values: [0.001, 0.005, 0.02, 0.1]

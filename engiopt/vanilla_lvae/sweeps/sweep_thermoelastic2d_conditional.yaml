@@ -1,0 +1,30 @@
+# WandB Sweep: Conditional vs unconditional P-LVAE on thermoelastic2d
+# Trains on ALL weights (no filter), compares conditional_predictor True/False.
+# Grid: 2 predictor modes × 3 seeds = 6 runs
+method: grid
+command:
+  - "python"
+  - "engiopt/vanilla_lvae/constrained_vanilla_plvae_2d.py"
+  - "--save_model"
+  - "${args}"
+
+metric:
+  name: val_rec
+  goal: minimize
+
+parameters:
+  problem_id:
+    value: "thermoelastic2d"
+
+  seed:
+    values: [1, 2, 3]
+
+  # NMSE thresholds
+  nmse_threshold_rec:
+    value: 0.05
+  nmse_threshold_perf:
+    value: 0.05
+
+  # Ablation: conditional vs unconditional predictor
+  conditional_predictor:
+    values: [true, false]
