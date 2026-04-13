@@ -1,0 +1,33 @@
+
+============================================================
+Constrained Performance-LVAE — thermoelastic2d
+Design shape          : (64, 64)
+Resize to             : (100, 100)
+Latent dim            : 100
+Perf dim              : 100
+Predictor mode        : Unconditional
+Lipschitz (decoder)   : 1.0
+Lipschitz (predictor) : 1.0
+NMSE threshold (rec)  : 0.99
+NMSE threshold (perf) : 0.99
+Pruning from epoch    : 999999 (plummet, thr=0.05)
+Images → /cluster/scratch/tcasartelli/thermoelastic2d_constrained_plvae/images
+Checkpoints → /cluster/scratch/tcasartelli/thermoelastic2d_constrained_plvae/checkpoints
+============================================================
+
+Multi-objective performance target: ['structural_compliance', 'thermal_compliance', 'volume_fraction']
+Multi-objective performance target: ['structural_compliance', 'thermal_compliance', 'volume_fraction']
+Data variance (designs) : 0.089639
+Perf variance (scaled)  : 1.801236
+Epoch 0:   0%|          | 0/5 [00:00<?, ?it/s]/cluster/home/tcasartelli/projects/EngiOpt/engiopt/vanilla_lvae/aes.py:97: UserWarning: Using a target size (torch.Size([128, 1])) that is different to the input size (torch.Size([128, 3])). This will likely lead to incorrect results due to broadcasting. Please ensure they have the same size.
+  return f.mse_loss(x, x_hat)
+/cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas/experiments/thermoelastic2d_constrained_plvae_ablation.py:276: UserWarning: Using a target size (torch.Size([128, 3])) that is different to the input size (torch.Size([128, 1])). This will likely lead to incorrect results due to broadcasting. Please ensure they have the same size.
+  loss = th.nn.functional.mse_loss(p_pred, p_batch)
+Epoch 0:   0%|          | 0/5 [00:05<?, ?it/s, rec=0.1289, perf=1.1452, vol=0.3544, nmse_r=1.4376, nmse_p=0.6358, vol_on=0, dim=100]
+Traceback (most recent call last):
+  File "/cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas/experiments/thermoelastic2d_constrained_plvae_ablation.py", line 334, in <module>
+    p_predicted = p_scaler.inverse_transform(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/cluster/scratch/tcasartelli/engi-venv/lib/python3.11/site-packages/sklearn/preprocessing/_data.py", line 1798, in inverse_transform
+    X *= self.scale_
+ValueError: non-broadcastable output operand with shape (600,1) doesn't match the broadcast shape (600,3)

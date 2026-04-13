@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas_thermo2D/thermoelastic2d_constrained_lvae_2d.py", line 151, in <module>
+    lvae = ConstrainedLeastVolumeAE_DP(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: ConstrainedLeastVolumeAE_DP.__init__() got an unexpected keyword argument 'w_vol'

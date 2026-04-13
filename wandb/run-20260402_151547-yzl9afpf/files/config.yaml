@@ -1,0 +1,178 @@
+_wandb:
+    value:
+        cli_version: 0.25.0
+        code_path: code/vanilla_thomas_thermo2D/thermoelastic2d_constrained_lvae_2d.py
+        e:
+            i72qed09axwhv9nyabqi1i282vdg4huy:
+                args:
+                    - --problem_id
+                    - thermoelastic2d
+                    - --seed
+                    - "1"
+                    - --n_epochs
+                    - "10000"
+                    - --batch_size
+                    - "128"
+                    - --lr
+                    - "1e-4"
+                    - --latent_dim
+                    - "100"
+                    - --resize_dimensions
+                    - "100"
+                    - "100"
+                    - --nmse_threshold
+                    - "0.05"
+                    - --pruning_epoch
+                    - "500"
+                    - --pruning_threshold
+                    - "0.05"
+                    - --pruning_strategy
+                    - plummet
+                    - --save_model
+                    - --track
+                codePath: vanilla_thomas_thermo2D/thermoelastic2d_constrained_lvae_2d.py
+                codePathLocal: thermoelastic2d_constrained_lvae_2d.py
+                cpu_count: 128
+                cpu_count_logical: 128
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "10737418240"
+                        used: "8081645568"
+                email: tcasartelli@student.ethz.ch
+                executable: /cluster/scratch/tcasartelli/engi-venv/bin/python
+                git:
+                    commit: c220e98d38ce691b7ea4d52229c2b23ce4688ce4
+                    remote: git@github.com:IDEALLab/EngiOpt.git
+                gpu: NVIDIA GeForce RTX 4090
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ada
+                      cudaCores: 16384
+                      memoryTotal: "25757220864"
+                      name: NVIDIA GeForce RTX 4090
+                      uuid: GPU-fc8bf2bc-cbcc-1932-2906-6cb8049dc71a
+                host: eu-g6-012
+                memory:
+                    total: "538293407744"
+                os: Linux-5.15.0-171-generic-x86_64-with-glibc2.35
+                program: /cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas_thermo2D/thermoelastic2d_constrained_lvae_2d.py
+                python: CPython 3.11.6
+                root: /cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas_thermo2D
+                slurm:
+                    cluster_name: euler-24-production
+                    conf: /cluster/slurm/adm/etc/slurm.conf
+                    cpus_on_node: "4"
+                    cpus_per_task: "4"
+                    export_env: ALL,OMP_NUM_THREADS=4
+                    get_user_env: "1"
+                    gpus: nvidia_geforce_rtx_4090:1
+                    gpus_on_node: "1"
+                    gtids: "0"
+                    job_account: gpuhe/es_fuge
+                    job_cpus_per_node: "4"
+                    job_end_time: "1775222102"
+                    job_gid: "467714"
+                    job_gpus: "0"
+                    job_id: "62142931"
+                    job_name: thermo2d_constrained
+                    job_nodelist: eu-g6-012
+                    job_num_nodes: "1"
+                    job_partition: gpuhe.24h
+                    job_qos: es_fuge/gpuhe/24
+                    job_start_time: "1775135702"
+                    job_uid: "565475"
+                    job_user: tcasartelli
+                    jobid: "62142931"
+                    localid: "0"
+                    mem_per_cpu: "8192"
+                    nnodes: "1"
+                    nodeid: "0"
+                    nodelist: eu-g6-012
+                    nprocs: "1"
+                    ntasks: "1"
+                    oom_kill_step: "0"
+                    prio_process: "0"
+                    procid: "0"
+                    script_context: prolog_task
+                    submit_dir: /cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas_thermo2D
+                    submit_host: eu-login-37
+                    task_pid: "2145433"
+                    tasks_per_node: "1"
+                    topology_addr: .euler_rtx4090_lca_ib.eu-g6-012
+                    topology_addr_pattern: switch.switch.node
+                    tres_per_task: cpu=4
+                startedAt: "2026-04-02T13:15:47.351336Z"
+                writerId: i72qed09axwhv9nyabqi1i282vdg4huy
+        m: []
+        python_version: 3.11.6
+        t:
+            "1":
+                - 1
+                - 41
+                - 49
+                - 51
+                - 105
+            "2":
+                - 1
+                - 41
+                - 49
+                - 51
+                - 105
+            "3":
+                - 13
+                - 16
+            "4": 3.11.6
+            "5": 0.25.0
+            "12": 0.25.0
+            "13": linux-x86_64
+algo:
+    value: thermoelastic2d_constrained_lvae_2d
+alpha:
+    value: 0
+batch_size:
+    value: 128
+checkpoint_dir:
+    value: /cluster/scratch/tcasartelli/thermoelastic2d_constrained_lvae/checkpoints
+constraint_mode:
+    value: one_sided
+decoder_lipschitz_scale:
+    value: 1
+ema_beta:
+    value: 0.9
+images_dir:
+    value: /cluster/scratch/tcasartelli/thermoelastic2d_constrained_lvae/images
+latent_dim:
+    value: 100
+lr:
+    value: 0.0001
+n_epochs:
+    value: 10000
+nmse_threshold:
+    value: 0.05
+problem_id:
+    value: thermoelastic2d
+pruning_epoch:
+    value: 500
+pruning_strategy:
+    value: plummet
+pruning_threshold:
+    value: 0.05
+resize_dimensions:
+    value:
+        - 100
+        - 100
+sample_interval:
+    value: 500
+save_model:
+    value: true
+seed:
+    value: 1
+track:
+    value: true
+w_vol:
+    value: 1
+wandb_entity:
+    value: null
+wandb_project:
+    value: engiopt

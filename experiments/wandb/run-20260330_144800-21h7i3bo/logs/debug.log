@@ -1,0 +1,21 @@
+2026-03-30 14:48:00,952 INFO    MainThread:2123665 [wandb_setup.py:_flush():81] Current SDK version is 0.25.0
+2026-03-30 14:48:00,952 INFO    MainThread:2123665 [wandb_setup.py:_flush():81] Configure stats pid to 2123665
+2026-03-30 14:48:00,952 INFO    MainThread:2123665 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-03-30 14:48:00,952 INFO    MainThread:2123665 [wandb_init.py:setup_run_log_directory():717] Logging user logs to /cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas/experiments/wandb/run-20260330_144800-21h7i3bo/logs/debug.log
+2026-03-30 14:48:00,952 INFO    MainThread:2123665 [wandb_init.py:setup_run_log_directory():718] Logging internal logs to /cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas/experiments/wandb/run-20260330_144800-21h7i3bo/logs/debug-internal.log
+2026-03-30 14:48:00,952 INFO    MainThread:2123665 [wandb_init.py:init():844] calling init triggers
+2026-03-30 14:48:00,952 INFO    MainThread:2123665 [wandb_init.py:init():849] wandb.init called with sweep_config: {}
+config: {'problem_id': 'thermoelastic2d', 'algo': 'thermoelastic2d_constrained_plvae_ablation', 'track': True, 'wandb_project': 'engiopt', 'wandb_entity': None, 'seed': 1, 'save_model': True, 'sample_interval': 500, 'n_epochs': 10000, 'batch_size': 128, 'lr': 0.0001, 'latent_dim': 100, 'perf_dim': -1, 'nmse_threshold_rec': 0.05, 'nmse_threshold_perf': 0.05, 'w_reconstruction': 0.0, 'pruning_epoch': 500, 'pruning_threshold': 0.05, 'pruning_strategy': 'plummet', 'alpha': 0.0, 'resize_dimensions': (100, 100), 'predictor_hidden_dims': (256, 128), 'conditional_predictor': False, 'decoder_lipschitz_scale': 1.0, 'predictor_lipschitz_scale': 1.0, 'images_dir': '/cluster/scratch/tcasartelli/thermoelastic2d_constrained_plvae/images', 'checkpoint_dir': '/cluster/scratch/tcasartelli/thermoelastic2d_constrained_plvae/checkpoints', '_wandb': {'code_path': 'code/vanilla_thomas/experiments/thermoelastic2d_constrained_plvae_ablation.py'}}
+2026-03-30 14:48:00,952 INFO    MainThread:2123665 [wandb_init.py:init():892] starting backend
+2026-03-30 14:48:02,481 INFO    MainThread:2123665 [wandb_init.py:init():895] sending inform_init request
+2026-03-30 14:48:02,496 INFO    MainThread:2123665 [wandb_init.py:init():903] backend started and connected
+2026-03-30 14:48:02,498 INFO    MainThread:2123665 [wandb_init.py:init():973] updated telemetry
+2026-03-30 14:48:02,523 INFO    MainThread:2123665 [wandb_init.py:init():997] communicating run to backend with 90.0 second timeout
+2026-03-30 14:48:03,792 INFO    MainThread:2123665 [wandb_init.py:init():1042] starting run threads in backend
+2026-03-30 14:48:04,549 INFO    MainThread:2123665 [wandb_run.py:_console_start():2524] atexit reg
+2026-03-30 14:48:04,550 INFO    MainThread:2123665 [wandb_run.py:_redirect():2373] redirect: wrap_raw
+2026-03-30 14:48:04,550 INFO    MainThread:2123665 [wandb_run.py:_redirect():2442] Wrapping output streams.
+2026-03-30 14:48:04,550 INFO    MainThread:2123665 [wandb_run.py:_redirect():2465] Redirects installed.
+2026-03-30 14:48:04,560 INFO    MainThread:2123665 [wandb_init.py:init():1082] run started, returning control to user process
+2026-03-30 14:48:10,531 INFO    wandb-AsyncioManager-main:2123665 [service_client.py:_forward_responses():134] Reached EOF.
+2026-03-30 14:48:10,531 INFO    wandb-AsyncioManager-main:2123665 [mailbox.py:close():155] Closing mailbox, abandoning 1 handles.

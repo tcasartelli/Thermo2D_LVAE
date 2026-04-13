@@ -1,0 +1,24 @@
+
+============================================================
+Constrained LVAE — thermoelastic2d
+Design shape     : (64, 64)
+Resize to        : (100, 100)
+Latent dim       : 100
+Lipschitz        : 1.0
+NMSE threshold   : 0.05
+Constraint mode  : one_sided
+Pruning from epoch 500 (plummet, thr=0.05)
+Images → /cluster/scratch/tcasartelli/thermoelastic2d_constrained_lvae/images
+Checkpoints → /cluster/scratch/tcasartelli/thermoelastic2d_constrained_lvae/checkpoints
+============================================================
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Data variance    : 0.089639
+Epoch 0:   0%|          | 0/5 [00:04<?, ?it/s, rec=0.1289, vol=0.3544, nmse=1.4376, active=0, dim=100]
+Traceback (most recent call last):
+  File "/cluster/home/tcasartelli/projects/EngiOpt/vanilla_thomas_thermo2D/thermoelastic2d_constrained_lvae_2d.py", line 220, in <module>
+    "balance_factor": lvae.balance_factor,
+                      ^^^^^^^^^^^^^^^^^^^
+  File "/cluster/scratch/tcasartelli/engi-venv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'ConstrainedLeastVolumeAE_DP' object has no attribute 'balance_factor'
