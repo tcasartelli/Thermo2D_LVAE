@@ -25,7 +25,8 @@ from torch.utils.data import TensorDataset
 import tqdm
 import tyro
 
-from engiopt.vanilla_lvae.aes import LeastVolumeAE_DynamicPruning
+#from engiopt.vanilla_lvae.aes import LeastVolumeAE_DynamicPruning
+from aes_val_pruning import LeastVolumeAE_DynamicPruning_ValPruning as LeastVolumeAE_DynamicPruning
 from engiopt.vanilla_lvae.components import Encoder2D
 from engiopt.vanilla_lvae.components import TrueSNDecoder2D
 import wandb
@@ -54,7 +55,7 @@ class Args:
     """Interval for sampling designs during training."""
 
     # Training parameters
-    n_epochs: int = 100
+    n_epochs: int = 10000
     """Number of training epochs."""
     batch_size: int = 128
     """Batch size for training."""
@@ -97,6 +98,7 @@ class Args:
     """Directory to save visualisation images."""
     checkpoint_dir: str = os.path.join(os.environ.get("SCRATCH", "."), "thermoelastic2d_lvae", "checkpoints")
     """Directory to save model checkpoints."""
+
     early_stopping: bool = True
     patience: int = 10
     min_delta: float = 0.001
@@ -331,8 +333,12 @@ if __name__ == "__main__":
                 print(f"Early stopping at epoch {epoch}")
                 break
 
-        lvae.epoch_report(epoch=epoch, callbacks=[], batch=None, loss=losses, pbar=None)
-
+        #lvae.epoch_report(epoch=epoch, callbacks=[], batch=None, loss=losses, pbar=None)
+        with th.no_grad():
+            lvae.eval()
+            val_z = lvae.encoder(x_val.to(device))
+            lvae.train()
+        lvae.epoch_report(epoch=epoch, callbacks=[], val_z=val_z, batch=None, loss=losses, pbar=None)
         if args.track:
             wandb.log({"epoch": epoch, "val_rec": val_rec, "val_vol_loss": val_vol}, commit=True)
 

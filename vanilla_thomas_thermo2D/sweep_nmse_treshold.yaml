@@ -1,0 +1,25 @@
+program: thermoelastic2d_constrained_lvae_2d.py
+project: nmse_treshold_sweep
+method: grid
+metric:
+  name: val_nmse
+  goal: minimize
+
+parameters:
+  nmse_threshold:
+    values: [0.01, 0.03, 0.05, 0.10, 0.20]
+  seed:
+    value: 1
+  n_epochs:
+    value: 10000
+  problem_id:
+    value: thermoelastic2d
+  constraint_mode:
+    value: one_sided
+
+  early_stopping_start_epoch:
+    value: 1000
+  patience:
+    value: 50
+  
+    

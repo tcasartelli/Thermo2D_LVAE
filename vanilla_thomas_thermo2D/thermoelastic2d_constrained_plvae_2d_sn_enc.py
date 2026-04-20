@@ -1,4 +1,3 @@
-
 """Constrained Performance-LVAE for thermoelastic2D designs with plummet-based dynamic pruning.
 
 Adapted from constrained_vanilla_plvae_2d.py — uses NMSE threshold constraints
@@ -30,7 +29,8 @@ import tyro
 from engiopt.transforms import get_performance_target
 from engiopt.transforms import get_scalar_condition_keys
 from engiopt.vanilla_lvae.aes import ConstrainedPerfLeastVolumeAE_DP
-from engiopt.vanilla_lvae.components import Encoder2D
+#from engiopt.vanilla_lvae.components import Encoder2D
+from engiopt.vanilla_lvae.components_sn_encoder import SNEncoder2D as Encoder2D
 from engiopt.vanilla_lvae.components import SNMLPPredictor
 from engiopt.vanilla_lvae.components import TrueSNDecoder2D
 import wandb
