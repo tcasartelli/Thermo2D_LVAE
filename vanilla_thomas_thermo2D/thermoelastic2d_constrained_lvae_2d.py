@@ -128,7 +128,7 @@ if __name__ == "__main__":
     os.makedirs(args.checkpoint_dir, exist_ok=True)
 
     # ---- W&B logging ----
-    run_name = f"nmse{args.nmse_threshold}__{args.problem_id}__{args.algo}__{args.seed}__{int(time.time())}"
+    run_name = f"nmse_threshold_{args.nmse_threshold}_thermoelastic_2d"
     if args.track:
         wandb.init(
             project=args.wandb_project,

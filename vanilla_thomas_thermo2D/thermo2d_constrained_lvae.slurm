@@ -35,7 +35,7 @@ export WANDB_MODE=online
 export WANDB_PROJECT="nmse_treshold_sweep"
 
 #Run sweep agent (prende automaticamente la config dal sweep)
-wandb agent --count 1 tcasartelli-eth-z-rich/nmse_treshold_sweep/6f1n7i8p
+wandb agent --count 1 tcasartelli-eth-z-rich/nmse_treshold_sweep/jy1qq8pr
 
 
 
