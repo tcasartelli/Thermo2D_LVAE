@@ -34,6 +34,12 @@ VENV_DIR="/cluster/scratch/tcasartelli/engi-venv"
 source "$VENV_DIR/bin/activate"
 
 #------------------------------------------------------------------------------
+# W&B proxy fix (eth_proxy sets no_proxy which blocks api.wandb.ai)
+#------------------------------------------------------------------------------
+export no_proxy=$(echo "$no_proxy" | sed 's/api\.wandb\.ai,\?//g; s/,$//')
+export NO_PROXY=$(echo "$NO_PROXY" | sed 's/api\.wandb\.ai,\?//g; s/,$//')
+
+#------------------------------------------------------------------------------
 # W&B
 #------------------------------------------------------------------------------
 source ~/.secrets/ml_env.sh
@@ -43,7 +49,7 @@ export WANDB_PROJECT="thermoelastic2d"
 #------------------------------------------------------------------------------
 # Run
 #------------------------------------------------------------------------------
-python ~/projects/EngiOpt/vanilla_thomas_thermo2D/thermoelastic2d_vanilla_lvae_2d.py \
+python ~/projects/EngiOpt/engiopt/vanilla_thomas_thermo2D/thermoelastic2d_vanilla_lvae_2d.py \
     --problem_id thermoelastic2d \
     --seed 1 \
     --n_epochs 10000 \

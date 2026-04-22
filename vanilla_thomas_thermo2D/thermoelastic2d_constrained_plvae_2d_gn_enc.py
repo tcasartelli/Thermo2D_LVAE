@@ -1,9 +1,12 @@
-
 """Constrained Performance-LVAE for thermoelastic2D designs with plummet-based dynamic pruning.
 
 Adapted from constrained_vanilla_plvae_2d.py — uses NMSE threshold constraints
 for both reconstruction and performance prediction.
 problem_id and resize_dimensions set for thermoelastic2d dataset (64x64 designs).
+
+Encoder variant: SNEncoder2D_GN — spectral norm + GroupNorm instead of BatchNorm.
+GroupNorm removes the train/val statistics mismatch introduced by BatchNorm's
+running_mean/running_var, which behave differently in train vs eval mode.
 
 For more information on LVAE, see: https://arxiv.org/abs/2404.17773
 """
@@ -30,7 +33,7 @@ import tyro
 from engiopt.transforms import get_performance_target
 from engiopt.transforms import get_scalar_condition_keys
 from engiopt.vanilla_lvae.aes import ConstrainedPerfLeastVolumeAE_DP
-from engiopt.vanilla_lvae.components import Encoder2D
+from engiopt.vanilla_lvae.components_sn_encoder import SNEncoder2D_GN as Encoder2D
 from engiopt.vanilla_lvae.components import SNMLPPredictor
 from engiopt.vanilla_lvae.components import TrueSNDecoder2D
 import wandb
@@ -47,10 +50,12 @@ class Args:
     """Algorithm name for tracking purposes."""
     track: bool = True
     """Whether to track with Weights & Biases."""
-    wandb_project: str = "engiopt"
+    wandb_project: str = "spectral_norm_encoder"
     """WandB project name."""
     wandb_entity: str | None = None
     """WandB entity name. If None, uses the default entity."""
+    wandb_run_name: str | None = None
+    """WandB run name. If None, auto-generated from algo+seed+timestamp."""
     seed: int = 1
     """Random seed for reproducibility."""
     save_model: bool = True
@@ -99,11 +104,13 @@ class Args:
     """Lipschitz bound for spectrally normalized decoder."""
     predictor_lipschitz_scale: float = 1.0
     """Lipschitz bound for spectrally normalized MLP predictor."""
+    gn_groups: int = 8
+    """Number of groups for GroupNorm in the encoder (must divide each channel count)."""
 
     # Output dirs (override for Euler scratch)
-    images_dir: str = os.path.join(os.environ.get("SCRATCH", "."), "thermoelastic2d_constrained_plvae", "images")
+    images_dir: str = os.path.join(os.environ.get("SCRATCH", "."), "thermoelastic2d_constrained_plvae_gn_enc", "images")
     """Directory to save visualisation images."""
-    checkpoint_dir: str = os.path.join(os.environ.get("SCRATCH", "."), "thermoelastic2d_constrained_plvae", "checkpoints")
+    checkpoint_dir: str = os.path.join(os.environ.get("SCRATCH", "."), "thermoelastic2d_constrained_plvae_gn_enc", "checkpoints")
     """Directory to save model checkpoints."""
 
     early_stopping: bool = True
@@ -128,7 +135,7 @@ if __name__ == "__main__":
     os.makedirs(args.checkpoint_dir, exist_ok=True)
 
     # ---- W&B logging ----
-    run_name = f"{args.problem_id}__{args.algo}__{args.seed}__{int(time.time())}"
+    run_name = args.wandb_run_name or f"{args.problem_id}__{args.algo}__{args.seed}__{int(time.time())}"
     if args.track:
         wandb.init(
             project=args.wandb_project,
@@ -156,7 +163,7 @@ if __name__ == "__main__":
         device = th.device("cpu")
 
     # ---- Build encoder and decoder ----
-    enc = Encoder2D(args.latent_dim, design_shape, args.resize_dimensions)
+    enc = Encoder2D(args.latent_dim, design_shape, args.resize_dimensions, gn_groups=args.gn_groups)
     dec = TrueSNDecoder2D(args.latent_dim, design_shape, lipschitz_scale=args.decoder_lipschitz_scale)
 
     # ---- Determine perf_dim ----
@@ -192,7 +199,7 @@ if __name__ == "__main__":
     ).to(device)
 
     print(f"\n{'=' * 60}")
-    print("Constrained Performance-LVAE — thermoelastic2d")
+    print("Constrained Performance-LVAE — thermoelastic2d [GN encoder]")
     print(f"Design shape          : {design_shape}")
     print(f"Resize to             : {args.resize_dimensions}")
     print(f"Latent dim            : {args.latent_dim}")
@@ -202,6 +209,7 @@ if __name__ == "__main__":
     print(f"Lipschitz (predictor) : {args.predictor_lipschitz_scale}")
     print(f"NMSE threshold (rec)  : {args.nmse_threshold_rec}")
     print(f"NMSE threshold (perf) : {args.nmse_threshold_perf}")
+    print(f"GN groups             : {args.gn_groups}")
     print(f"Pruning from epoch    : {args.pruning_epoch} ({args.pruning_strategy}, thr={args.pruning_threshold})")
     print(f"Images → {args.images_dir}")
     print(f"Checkpoints → {args.checkpoint_dir}")
@@ -212,7 +220,6 @@ if __name__ == "__main__":
     train_ds = hf["train"]
     val_ds = hf["val"]
 
-    # Extract designs, conditions, and performance
     x_train = train_ds["optimal_design"][:].unsqueeze(1)  # (N, 1, 64, 64)
     c_train = th.stack([train_ds[key][:] for key in scalar_cond_keys], dim=-1)
     p_train = get_performance_target(problem, train_ds)
@@ -221,14 +228,12 @@ if __name__ == "__main__":
     c_val = th.stack([val_ds[key][:] for key in scalar_cond_keys], dim=-1)
     p_val = get_performance_target(problem, val_ds)
 
-    # Scale performance with RobustScaler
     p_scaler = RobustScaler()
     p_train_scaled = th.from_numpy(p_scaler.fit_transform(p_train.numpy())).to(p_train.dtype)
     p_val_scaled = th.from_numpy(p_scaler.transform(p_val.numpy())).to(p_val.dtype)
     p_scaler1 = RobustScaler()
     _ = p_scaler1.fit_transform(p_train[:, :1].numpy())
 
-    # Scale conditions if conditional predictor
     if args.conditional_predictor:
         c_scaler = RobustScaler()
         c_train_scaled = th.from_numpy(c_scaler.fit_transform(c_train.numpy())).to(c_train.dtype)
@@ -237,7 +242,6 @@ if __name__ == "__main__":
         c_train_scaled = th.zeros(len(x_train), 0)
         c_val_scaled = th.zeros(len(x_val), 0)
 
-    # Set data variances for NMSE computation
     plvae.set_data_variance(x_train)
     plvae.set_perf_variance(p_train_scaled)
 
@@ -304,7 +308,6 @@ if __name__ == "__main__":
                     "epoch"             : epoch,
                 })
 
-                # ---- Visualisation ----
                 if batches_done % args.sample_interval == 0:
                     with th.no_grad():
                         xs = x_train.to(device)
@@ -322,11 +325,8 @@ if __name__ == "__main__":
                         z_rand[:, idx[:n_active]] += z_std[:n_active] * th.randn_like(z_rand[:, idx[:n_active]])
                         x_rand = plvae.decode(z_rand).cpu().numpy()
 
-                        # Performance predictions
                         pz_train = z[:, :perf_dim]
-                        p_pred_scaled = plvae.predictor(
-                            pz_train
-                        )
+                        p_pred_scaled = plvae.predictor(pz_train)
                         p_actual = p_scaler1.inverse_transform(
                             p_train_scaled[:, :1].cpu().numpy()
                         ).flatten()
@@ -337,7 +337,6 @@ if __name__ == "__main__":
                         z_std_cpu = z_std.cpu().numpy()
                         xs_cpu = xs.cpu().numpy()
 
-                    # Plot 1: latent std
                     plt.figure(figsize=(12, 6))
                     plt.subplot(211)
                     plt.bar(np.arange(len(z_std_cpu)), z_std_cpu)
@@ -348,12 +347,9 @@ if __name__ == "__main__":
                     plt.subplot(212)
                     plt.bar(np.arange(n_active), z_std_cpu[:n_active])
                     plt.yscale("log")
-                    plt.xlabel("Latent dimension index")
-                    plt.ylabel("Standard deviation")
                     dim_path = os.path.join(args.images_dir, f"dim_{batches_done}.png")
                     plt.savefig(dim_path); plt.close()
 
-                    # Plot 2: interpolations
                     fig, axs = plt.subplots(25, 6, figsize=(12, 25))
                     for i_row, j in product(range(25), range(5)):
                         axs[i_row, j + 1].imshow(x_ints[j][i_row].reshape(design_shape))
@@ -370,7 +366,6 @@ if __name__ == "__main__":
                     interp_path = os.path.join(args.images_dir, f"interp_{batches_done}.png")
                     plt.savefig(interp_path); plt.close()
 
-                    # Plot 3: random samples
                     fig, axs = plt.subplots(5, 5, figsize=(15, 7.5))
                     for k, (i_row, j) in enumerate(product(range(5), range(5))):
                         axs[i_row, j].imshow(x_rand[k].reshape(design_shape))
@@ -381,7 +376,6 @@ if __name__ == "__main__":
                     norm_path = os.path.join(args.images_dir, f"norm_{batches_done}.png")
                     plt.savefig(norm_path); plt.close()
 
-                    # Plot 4: predicted vs actual performance
                     plt.figure(figsize=(8, 8))
                     plt.scatter(p_actual, p_predicted, alpha=0.5, s=20)
                     min_val = min(p_actual.min(), p_predicted.min())
@@ -458,7 +452,7 @@ if __name__ == "__main__":
 
         # ---- Checkpoint ----
         if args.save_model and epoch == args.n_epochs - 1:
-            ckpt_path = os.path.join(args.checkpoint_dir, "thermoelastic2d_constrained_plvae.pth")
+            ckpt_path = os.path.join(args.checkpoint_dir, "thermoelastic2d_constrained_plvae_gn_enc.pth")
             th.save({
                 "epoch"    : epoch,
                 "encoder"  : plvae.encoder.state_dict(),

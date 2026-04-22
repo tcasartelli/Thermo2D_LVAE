@@ -1,0 +1,27 @@
+program: /cluster/home/tcasartelli/projects/EngiOpt/engiopt/vanilla_thomas_thermo2D/thermoelastic2d_constrained_lvae_2d.py
+project: nmse_treshold_sweep
+method: grid
+metric:
+  name: val_nmse
+  goal: minimize
+
+parameters:
+  nmse_threshold:
+    values: [0.15, 0.18, 0.20, 0.22, 0.25]
+  seed:
+    value: 1
+  n_epochs:
+    value: 10000
+  problem_id:
+    value: thermoelastic2d
+  constraint_mode:
+    value: one_sided
+
+  early_stopping_start_epoch:
+    #value: 1000
+    value: 2000
+  patience:
+    #value: 50
+    value: 100
+  
+    

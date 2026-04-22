@@ -29,7 +29,8 @@ import tyro
 
 from engiopt.transforms import get_performance_target
 from engiopt.transforms import get_scalar_condition_keys
-from engiopt.vanilla_lvae.aes import ConstrainedPerfLeastVolumeAE_DP
+#from engiopt.vanilla_lvae.aes import ConstrainedPerfLeastVolumeAE_DP
+from aes_val_pruning import ConstrainedPerfLeastVolumeAE_DP_ValPruning as ConstrainedPerfLeastVolumeAE_DP
 from engiopt.vanilla_lvae.components import Encoder2D
 from engiopt.vanilla_lvae.components import SNMLPPredictor
 from engiopt.vanilla_lvae.components import TrueSNDecoder2D
@@ -441,8 +442,12 @@ if __name__ == "__main__":
                 print(f"Early stopping at epoch {epoch}")
                 break
 
-        plvae.epoch_report(epoch=epoch, callbacks=[], batch=None, loss=loss, pbar=None)
-
+        #plvae.epoch_report(epoch=epoch, callbacks=[], batch=None, loss=loss, pbar=None)
+        with th.no_grad():
+            plvae.eval()
+            val_z = plvae.encoder(x_val.to(device))
+            plvae.train()
+        plvae.epoch_report(epoch=epoch, callbacks=[], val_z=val_z, batch=None, loss=loss, pbar=None)
         if args.track:
             wandb.log({
                 "epoch"        : epoch,

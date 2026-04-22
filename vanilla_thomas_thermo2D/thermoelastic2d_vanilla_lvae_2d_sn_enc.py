@@ -26,7 +26,8 @@ import tqdm
 import tyro
 
 from engiopt.vanilla_lvae.aes import LeastVolumeAE_DynamicPruning
-from engiopt.vanilla_lvae.components import Encoder2D
+#from engiopt.vanilla_lvae.components import Encoder2D
+from engiopt.vanilla_lvae.components_sn_encoder import SNEncoder2D as Encoder2D
 from engiopt.vanilla_lvae.components import TrueSNDecoder2D
 import wandb
 
@@ -54,7 +55,7 @@ class Args:
     """Interval for sampling designs during training."""
 
     # Training parameters
-    n_epochs: int = 100
+    n_epochs: int = 10000
     """Number of training epochs."""
     batch_size: int = 128
     """Batch size for training."""
@@ -97,6 +98,7 @@ class Args:
     """Directory to save visualisation images."""
     checkpoint_dir: str = os.path.join(os.environ.get("SCRATCH", "."), "thermoelastic2d_lvae", "checkpoints")
     """Directory to save model checkpoints."""
+
     early_stopping: bool = True
     patience: int = 10
     min_delta: float = 0.001
