@@ -200,6 +200,7 @@ class LeastVolumeAE_DynamicPruning(LeastVolumeAE):  # noqa: N801
         pruning_threshold: float = 0.02,
         pruning_strategy: Literal["plummet", "lognorm"] = "plummet",
         alpha: float = 0,
+        latent_noise_sigma: float = 0.0,
     ) -> None:
         if weights is None:
             weights = [1.0, 0.001]
@@ -214,6 +215,7 @@ class LeastVolumeAE_DynamicPruning(LeastVolumeAE):  # noqa: N801
         self.pruning_threshold = pruning_threshold
         self.pruning_strategy = pruning_strategy
         self.alpha = alpha
+        self.latent_noise_sigma = latent_noise_sigma
 
         # EMA statistics (initialized on first batch)
         self._zstd: torch.Tensor | None = None
@@ -252,8 +254,8 @@ class LeastVolumeAE_DynamicPruning(LeastVolumeAE):  # noqa: N801
     def loss(self, x: torch.Tensor) -> torch.Tensor:
         """Compute losses and update moving statistics."""
         z = self.encode(x)
-        x_hat = self.decode(z)
-        self._update_moving_mean(z)
+        self._update_moving_mean(z)  # clean z for pruning stats
+        x_hat = self.decode(self._maybe_add_noise(z))  # noisy z for decoder robustness
 
         # Volume loss: pruned dims use frozen std (captured at prune time),
         # active dims use current std. This makes pruning volume-neutral.
@@ -273,6 +275,19 @@ class LeastVolumeAE_DynamicPruning(LeastVolumeAE):  # noqa: N801
         else:
             self._zstd = torch.lerp(self._zstd, z.std(0), 1 - self._beta)
             self._zmean = torch.lerp(self._zmean, z.mean(0), 1 - self._beta)
+
+    def _maybe_add_noise(self, z: torch.Tensor) -> torch.Tensor:
+        """Add Gaussian noise to latent code during training.
+
+        Pruned dims are kept at their frozen mean — only active dims get noise.
+        Clean z should still be used for pruning stats and volume computation.
+        """
+        if not self.training or self.latent_noise_sigma <= 0:
+            return z
+        z_noisy = z + self.latent_noise_sigma * torch.randn_like(z)
+        if self._p.any():
+            z_noisy[:, self._p] = self._z[self._p]
+        return z_noisy
 
     @torch.no_grad()
     def _plummet_prune(self, z_std: torch.Tensor) -> torch.Tensor:
@@ -522,6 +537,7 @@ class ConstrainedLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N801
         pruning_threshold: float = 0.02,
         pruning_strategy: Literal["plummet", "lognorm"] = "plummet",
         alpha: float = 0,
+        latent_noise_sigma: float = 0.0,
     ) -> None:
         # Parent uses weights for its loss computation, but we override loss()
         super().__init__(
@@ -536,6 +552,7 @@ class ConstrainedLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N801
             pruning_threshold=pruning_threshold,
             pruning_strategy=pruning_strategy,
             alpha=alpha,
+            latent_noise_sigma=latent_noise_sigma,
         )
         self.nmse_threshold = nmse_threshold
 
@@ -599,8 +616,8 @@ class ConstrainedLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N801
             Scalar loss tensor for backpropagation.
         """
         z = self.encode(x)
-        x_hat = self.decode(z)
-        self._update_moving_mean(z)
+        self._update_moving_mean(z)  # clean z for pruning stats
+        x_hat = self.decode(self._maybe_add_noise(z))  # noisy z for decoder robustness
 
         rec_loss = self.loss_rec(x, x_hat)
 
@@ -789,6 +806,7 @@ class ConstrainedPerfLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N8
         pruning_threshold: float = 0.02,
         pruning_strategy: Literal["plummet", "lognorm"] = "plummet",
         alpha: float = 0,
+        latent_noise_sigma: float = 0.0,
         *,
         conditional_decoder: bool = False,
         condition_encoder: nn.Module | None = None,
@@ -806,6 +824,7 @@ class ConstrainedPerfLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N8
             pruning_threshold=pruning_threshold,
             pruning_strategy=pruning_strategy,
             alpha=alpha,
+            latent_noise_sigma=latent_noise_sigma,
         )
         self.predictor = predictor
         self.perf_dim = perf_dim
@@ -934,17 +953,18 @@ class ConstrainedPerfLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N8
 
         z = self.encode(x)
 
+        # Update moving statistics with clean z (pruning stats must not see noise)
+        self._update_moving_mean(z)
+
         # Build condition embedding (shared for decoder + predictor)
         cond_emb = self._build_cond_embedding(c, c_img)
 
-        # Decoder: conditional or unconditional
+        # Decoder: noisy z for robustness, conditional or unconditional
+        z_noisy = self._maybe_add_noise(z)
         if self.conditional_decoder and cond_emb is not None:
-            x_hat = self.decoder(z, cond=cond_emb)
+            x_hat = self.decoder(z_noisy, cond=cond_emb)
         else:
-            x_hat = self.decode(z)
-
-        # Update moving statistics for pruning
-        self._update_moving_mean(z)
+            x_hat = self.decode(z_noisy)
 
         # Compute reconstruction loss
         rec_loss = self.loss_rec(x, x_hat)
