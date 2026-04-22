@@ -538,6 +538,7 @@ class ConstrainedLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N801
         pruning_strategy: Literal["plummet", "lognorm"] = "plummet",
         alpha: float = 0,
         latent_noise_sigma: float = 0.0,
+        val_gate: bool = False,
     ) -> None:
         # Parent uses weights for its loss computation, but we override loss()
         super().__init__(
@@ -555,10 +556,14 @@ class ConstrainedLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N801
             latent_noise_sigma=latent_noise_sigma,
         )
         self.nmse_threshold = nmse_threshold
+        self.val_gate = val_gate
 
         # Data variance for NMSE computation (must be set via set_data_variance)
         self.register_buffer("_data_var", torch.tensor(1.0))
         self._data_var_set = False
+
+        # Val-gate state: True when val_nmse ≤ threshold (or val_gate disabled)
+        self._val_nmse_ok: bool = not val_gate
 
         # Current state for logging
         self._current_nmse: float = 0.0
@@ -606,6 +611,18 @@ class ConstrainedLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N801
         self._data_var = torch.tensor(var, device=self._data_var.device)
         self._data_var_set = True
 
+    def set_val_nmse(self, val_nmse: float) -> None:
+        """Update val NMSE gate after each validation pass.
+
+        Call this from the training loop after computing val_nmse.
+        Has no effect when val_gate=False.
+
+        Args:
+            val_nmse: Validation NMSE from the latest validation epoch.
+        """
+        if self.val_gate:
+            self._val_nmse_ok = val_nmse <= self.nmse_threshold
+
     def loss(self, x: torch.Tensor) -> torch.Tensor:
         """Compute loss with NMSE-gated volume optimization.
 
@@ -633,18 +650,19 @@ class ConstrainedLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N801
         self._current_rec_loss = rec_loss.item()
         self._current_vol_loss = vol_loss.item()
 
-        # Constraint logic: optimize rec until NMSE is satisfied,
-        # then add volume while keeping rec floor to prevent overshoot.
-        if nmse > self.nmse_threshold:
+        # Constraint logic: volume activates only when train_nmse AND
+        # val_nmse (if val_gate=True) are both below threshold.
+        if nmse > self.nmse_threshold or not self._val_nmse_ok:
             self._vol_active = False
             return rec_loss
-        # Constraint satisfied - optimize volume with rec floor
         self._vol_active = True
         return vol_loss + rec_loss
 
     @torch.no_grad()
     def _prune_step(self, epoch: int) -> None:
-        """Execute pruning unconditionally after pruning_epoch."""
+        """Prune only when val NMSE gate is satisfied (if val_gate=True)."""
+        if not self._val_nmse_ok:
+            return
         super()._prune_step(epoch)
 
 
@@ -807,6 +825,7 @@ class ConstrainedPerfLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N8
         pruning_strategy: Literal["plummet", "lognorm"] = "plummet",
         alpha: float = 0,
         latent_noise_sigma: float = 0.0,
+        val_gate: bool = False,
         *,
         conditional_decoder: bool = False,
         condition_encoder: nn.Module | None = None,
@@ -830,6 +849,7 @@ class ConstrainedPerfLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N8
         self.perf_dim = perf_dim
         self.nmse_threshold_rec = nmse_threshold_rec
         self.nmse_threshold_perf = nmse_threshold_perf
+        self.val_gate = val_gate
         self.conditional_decoder = conditional_decoder
         self.condition_encoder = condition_encoder
 
@@ -842,6 +862,9 @@ class ConstrainedPerfLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N8
         # Performance is disabled when the threshold is unreasonably large
         # (e.g. the legacy perf=1000 recon-only ablation convention).
         self._perf_enabled: bool = nmse_threshold_perf < _PERF_DISABLED_THRESHOLD
+
+        # Val-gate state: True when val_nmse ≤ threshold (or val_gate disabled)
+        self._val_nmse_ok: bool = not val_gate
 
         # Current state for logging
         self._current_nmse_rec: float = 0.0
@@ -1002,18 +1025,36 @@ class ConstrainedPerfLeastVolumeAE_DP(LeastVolumeAE_DynamicPruning):  # noqa: N8
         # When perf is disabled, only the rec constraint matters.
         # rec+perf are always included to prevent volume from overshooting
         # the threshold in a single step (volume naturally dominates).
+        # When val_gate=True, volume also requires val_nmse ≤ threshold.
         rec_violated = nmse_rec > self.nmse_threshold_rec
         perf_violated = self._perf_enabled and nmse_perf > self.nmse_threshold_perf
-        if rec_violated or perf_violated:
+        if rec_violated or perf_violated or not self._val_nmse_ok:
             self._vol_active = False
             return rec_loss + perf_loss
         # All active constraints satisfied - optimize volume with rec+perf floor
         self._vol_active = True
         return vol_loss + rec_loss + perf_loss
 
+    def set_val_nmse(self, val_nmse_rec: float, val_nmse_perf: float = 0.0) -> None:
+        """Update val NMSE gate after each validation pass.
+
+        Call this from the training loop after computing validation NMSEs.
+        Has no effect when val_gate=False.
+
+        Args:
+            val_nmse_rec: Validation reconstruction NMSE.
+            val_nmse_perf: Validation performance NMSE (ignored when perf disabled).
+        """
+        if self.val_gate:
+            rec_ok = val_nmse_rec <= self.nmse_threshold_rec
+            perf_ok = (not self._perf_enabled) or (val_nmse_perf <= self.nmse_threshold_perf)
+            self._val_nmse_ok = rec_ok and perf_ok
+
     @torch.no_grad()
     def _prune_step(self, epoch: int) -> None:
-        """Execute pruning unconditionally after pruning_epoch."""
+        """Prune only when val NMSE gate is satisfied (if val_gate=True)."""
+        if not self._val_nmse_ok:
+            return
         super()._prune_step(epoch)
 
 
